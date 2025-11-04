@@ -1,7 +1,7 @@
 ﻿using System.CommandLine;
 using DeployHelper.Commands;
 
-var root = new RootCommand("Deploy Helper CLI - Automate feature merges into env branches");
+var root = new RootCommand("Welcome to Deploy Helper CLI - Automate feature merges into env branches");
 
 // ----- LIST COMMAND -----
 var list = new Command("list", "List all feature branches");

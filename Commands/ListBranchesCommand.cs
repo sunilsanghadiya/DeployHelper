@@ -1,6 +1,7 @@
 using DeployHelper.Services;
 using System;
 using System.IO;
+using LibGit2Sharp;
 
 namespace DeployHelper.Commands;
 
@@ -8,17 +9,38 @@ public class ListBranchesCommand
 {
     public void Execute()
     {
-        var repoPath = Directory.GetCurrentDirectory();
-        var branches = GitService.GetFeatureBranches(repoPath);
+        using var repo = new Repository(Environment.CurrentDirectory);
+
+        var excludedBaseBranches = new[] { "main", "master", "dev", "develop", "qa", "uat", "prod", "production" };
+
+        var branches = repo.Branches
+            .Where(b =>
+                !b.IsRemote &&
+                !excludedBaseBranches.Contains(b.FriendlyName, StringComparer.OrdinalIgnoreCase) &&
+                !b.FriendlyName.Contains("origin/") &&
+                !b.FriendlyName.StartsWith("refs/", StringComparison.OrdinalIgnoreCase)
+            )
+            .Select(b => b.FriendlyName)
+            .OrderBy(b => b)
+            .ToList();
 
         if (branches.Count == 0)
         {
-            Console.WriteLine("No feature branches found :(");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("No local feature-like branches found :( ");
+            Console.ResetColor();
             return;
         }
 
-        Console.WriteLine("Available feature branches:");
-        for (int i = 0; i < branches.Count; i++)
-            Console.WriteLine($"{i + 1}. {branches[i]}");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"Found {branches.Count} potential feature branches:\n");
+        Console.ResetColor();
+
+        foreach (var branch in branches)
+        {
+            Console.WriteLine($" - {branch}");
+        }
+
+        Console.WriteLine();
     }
 }
