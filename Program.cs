@@ -3,7 +3,6 @@ using DeployHelper.Commands;
 
 var root = new RootCommand("Welcome to Deploy Helper CLI - Automate feature merges into env branches");
 
-// ----- LIST COMMAND -----
 var list = new Command("list", "List all feature branches");
 list.SetHandler(() =>
 {
@@ -11,7 +10,6 @@ list.SetHandler(() =>
 });
 root.AddCommand(list);
 
-// ----- CREATE COMMAND -----
 var envOption = new Option<string>("--env", "Target environment (e.g., uat, qa, prod)") { IsRequired = true };
 var baseOption = new Option<string>("--base", "Base branch (e.g., dev, main)") { IsRequired = true };
 var branchesOption = new Option<string>("--branches", "Comma-separated feature branch names") { IsRequired = true };

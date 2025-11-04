@@ -1,46 +1,58 @@
-using DeployHelper.Services;
 using System;
-using System.IO;
+using System.Linq;
 using LibGit2Sharp;
 
-namespace DeployHelper.Commands;
-
-public class ListBranchesCommand
+namespace DeployHelper.Commands
 {
-    public void Execute()
+    public class ListBranchesCommand
     {
-        using var repo = new Repository(Environment.CurrentDirectory);
-
-        var excludedBaseBranches = new[] { "main", "master", "dev", "develop", "qa", "uat", "prod", "production" };
-
-        var branches = repo.Branches
-            .Where(b =>
-                !b.IsRemote &&
-                !excludedBaseBranches.Contains(b.FriendlyName, StringComparer.OrdinalIgnoreCase) &&
-                !b.FriendlyName.Contains("origin/") &&
-                !b.FriendlyName.StartsWith("refs/", StringComparison.OrdinalIgnoreCase)
-            )
-            .Select(b => b.FriendlyName)
-            .OrderBy(b => b)
-            .ToList();
-
-        if (branches.Count == 0)
+        public void Execute()
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("No local feature-like branches found :( ");
-            Console.ResetColor();
-            return;
+            using var repo = new Repository(Environment.CurrentDirectory);
+
+            Console.WriteLine($"Repository: {repo.Info.WorkingDirectory}");
+
+            // Fetch remote refs to show up-to-date remote branches
+            try
+            {
+                LibGit2Sharp.Commands.Fetch(repo, "origin", Array.Empty<string>(), new FetchOptions(), null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: fetch failed: {ex.Message}");
+            }
+
+            var excludedBaseBranches = new[] { "main", "master", "dev", "qa", "uat", "production" };
+
+            //combine local and remote branch names
+            var allBranches = repo.Branches
+                .Where(b =>
+                    //include both local and remote but exclude internal refs and excluded base names
+                    !IsGitInternalBranch(b.FriendlyName) &&
+                    !excludedBaseBranches.Contains(b.FriendlyName)
+                )
+                .Select(b => b.FriendlyName)
+                .Distinct()
+                .OrderBy(b => b)
+                .ToList();
+
+            if (!allBranches.Any())
+            {
+                Console.WriteLine("No feature branches found.");
+                return;
+            }
+
+            Console.WriteLine("Available branches:");
+            foreach (var b in allBranches)
+                Console.WriteLine($"- {b}");
         }
 
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"Found {branches.Count} potential feature branches:\n");
-        Console.ResetColor();
-
-        foreach (var branch in branches)
+        private static bool IsGitInternalBranch(string branchName)
         {
-            Console.WriteLine($" - {branch}");
+            return branchName.StartsWith("refs/") ||
+                   branchName.Contains("HEAD") ||
+                   branchName.Contains("FETCH_HEAD") ||
+                   branchName.Contains("MERGE_");
         }
-
-        Console.WriteLine();
     }
 }
