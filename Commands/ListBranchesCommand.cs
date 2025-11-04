@@ -10,12 +10,15 @@ namespace DeployHelper.Commands
         {
             using var repo = new Repository(Environment.CurrentDirectory);
 
+            Console.WriteLine(" ");
             Console.WriteLine($"Repository: {repo.Info.WorkingDirectory}");
+            Console.WriteLine(" ");
 
             // Fetch remote refs to show up-to-date remote branches
             try
             {
                 LibGit2Sharp.Commands.Fetch(repo, "origin", Array.Empty<string>(), new FetchOptions(), null);
+                Console.WriteLine(" ");
             }
             catch (Exception ex)
             {
