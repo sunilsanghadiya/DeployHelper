@@ -22,8 +22,8 @@ namespace DeployHelper.Commands
                 return;
             }
 
-            Repository repo = null;
-            string originalBranch = null;
+            Repository? repo = null;
+            string? originalBranch = null;
             var failedBranches = new List<string>();
 
             try
@@ -178,7 +178,7 @@ namespace DeployHelper.Commands
             }
         }
 
-        private Branch EnsureBaseBranch(Repository repo, string baseBranch)
+        private Branch? EnsureBaseBranch(Repository repo, string baseBranch)
         {
             var baseLocal = repo.Branches.FirstOrDefault(b => b.FriendlyName == baseBranch);
 

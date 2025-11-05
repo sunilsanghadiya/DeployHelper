@@ -1,0 +1,374 @@
+﻿# Deploy Helper CLI - New Commands
+
+## Installation & Setup
+
+Ensure you have the following NuGet packages installed:
+```bash
+dotnet add package LibGit2Sharp
+dotnet add package System.CommandLine
+```
+
+## Command Reference
+
+### 1. `owner` - Branch Ownership Analysis
+
+Shows who created a branch and all contributors with statistics.
+
+**Usage:**
+```bash
+deployhelper owner <branch-name>
+```
+
+**Examples:**
+```bash
+# Check ownership of a feature branch
+deployhelper owner feature/AUTH-123
+
+# Check a remote branch
+deployhelper owner origin/feature/AUTH-123
+```
+
+**Output:**
+```
+Branch: feature/AUTH-123-login
+
+Owner (Creator): John Doe <john@company.com>
+Created: 2024-10-28 14:30
+
+Last Contributor: Jane Smith <jane@company.com>
+Last Activity: 2024-11-01 09:15
+
+Contributors:
+  John Doe       -   8 commits ( 72.7%) ████████████████
+  Jane Smith     -   2 commits ( 18.2%) ████
+  Bob Johnson    -   1 commit  (  9.1%) ██
+
+Total commits: 11
+Branch age: 8 days
+Unique contributors: 3
+
+✓ Tracking: origin/feature/AUTH-123
+```
+
+---
+
+### 2. `where` - Track Feature Deployment
+
+Shows which environments contain a specific feature branch.
+
+**Usage:**
+```bash
+deployhelper where <feature-branch>
+```
+
+**Examples:**
+```bash
+# Check where a feature is deployed
+deployhelper where feature/AUTH-123
+
+# Check with remote branch
+deployhelper where origin/feature/PAYMENT-456
+```
+
+**Output:**
+```
+Tracking feature: feature/AUTH-123-login
+
+Environment Status:
+  dev          ✓ Merged (3 days ago)
+  qa           ✓ Merged (2 days ago)
+  uat          ✓ Merged (1 day ago)
+  staging      ✗ Not merged
+  prod         ✗ Not merged
+
+Commits in branch: 5
+First commit: 2024-10-28
+Last commit: 2024-11-01
+Author: John Doe
+```
+
+**Status Indicators:**
+- ✓ **Merged** - Feature is fully merged
+- ⚠ **Partially merged** - Some commits present, but not all
+- ✗ **Not merged** - Feature is not in this environment
+
+---
+
+### 3. `doctor` - Repository Health Check
+
+Runs comprehensive diagnostics on your repository.
+
+**Usage:**
+```bash
+deployhelper doctor
+```
+
+**What it checks:**
+- ✓ Git configuration (user.name, user.email)
+- ✓ Uncommitted changes
+- ✓ Stale branches (>30 days old)
+- ✓ Branches without remote tracking
+- ✓ Repository size and object count
+- ✓ Large files (>10MB)
+- ✓ Diverged branches (local vs remote)
+
+**Example Output:**
+```
+Running repository health check...
+
+✓ Git Configuration
+  User: John Doe <john@company.com>
+  Remote: origin → https://github.com/company/repo.git
+
+⚠ Uncommitted Changes
+  3 files modified, 1 file staged
+  → Run 'git status' to review
+
+✗ Stale Branches (5 found)
+  feature/old-feature-1  (62 days old)
+  feature/old-feature-2  (45 days old)
+  feature/old-feature-3  (38 days old)
+  → Run 'deployhelper cleanup --older-than 30d' to remove
+
+⚠ Branches Without Remote (2 found)
+  feature/local-experiment
+  feature/temp-work
+  → Push or delete these branches
+
+✓ Repository Size
+  Size: 45.2 MB
+  Objects: 1,234
+
+✓ No Large Files Detected
+
+⚠ Diverged Branches (1 found)
+  dev: local is 3 commits behind origin
+  → Run 'git pull' to sync
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Summary:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  2 issues
+  3 warnings
+  3 passed
+
+  Overall Status: NEEDS ATTENTION
+```
+
+---
+
+### 4. `search` - Search Commits and Code
+
+Search through commit messages or actual code changes.
+
+**Basic Usage:**
+```bash
+deployhelper search <query>
+```
+
+**Search in Commit Messages:**
+```bash
+# Simple text search
+deployhelper search "authentication"
+
+# Search by author
+deployhelper search "bug fix" --author "John"
+
+# Search in last 7 days
+deployhelper search "refactor" --since 7d
+
+# Search in specific branch
+deployhelper search "login" --branch feature/AUTH-123
+
+# Case-sensitive search
+deployhelper search "AuthToken" --case-sensitive
+
+# Use regex
+deployhelper search "AUTH-\d+" --regex
+
+# Limit results
+deployhelper search "fix" --limit 10
+```
+
+**Search in Code Changes:**
+```bash
+# Search in actual code (slower)
+deployhelper search "validateToken" --code
+
+# Search code with author filter
+deployhelper search "function login" --code --author "Jane"
+
+# Search code in last 30 days
+deployhelper search "console.log" --code --since 30d
+```
+
+**Example Output (Commit Search):**
+```
+Searching commits for: "authentication"
+
+Found 12 matches:
+
+[feature/AUTH-123]
+abc1234 - 2024-11-01 14:30 - John Doe
+  feat: add authentication middleware
+
+[feature/AUTH-125]
+def5678 - 2024-10-30 09:15 - Jane Smith
+  fix: authentication token expiry bug
+
+[dev]
+ghi9012 - 2024-10-28 16:45 - Bob Johnson
+  docs: update authentication guide
+
+Use 'git show <commit>' to view details
+Use 'deployhelper search "query" --code' to search code changes
+```
+
+**Example Output (Code Search):**
+```
+Searching code for: "validateToken"
+
+Found 8 matches in code:
+
+[feature/AUTH-123]
+abc1234 - 2024-11-01 - John Doe
+  src/middleware/auth.js
+    + function validateToken(token) {
+
+[feature/AUTH-125]
+def5678 - 2024-10-30 - Jane Smith
+  src/utils/token.js
+    - validateToken(oldToken)
+    + validateToken(newToken)
+
+[dev]
+ghi9012 - 2024-10-28 - Bob Johnson
+  tests/auth.test.js
+    + expect(validateToken(token)).toBe(true)
+```
+
+**Search Options:**
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `--code` | Search in code changes instead of messages | `--code` |
+| `--author <name>` | Filter by author name or email | `--author "John"` |
+| `--since <date>` | Date filter (7d, 30d, or YYYY-MM-DD) | `--since 7d` |
+| `--branch <name>` | Search specific branch only | `--branch dev` |
+| `--case-sensitive` | Case-sensitive search | `--case-sensitive` |
+| `--regex` | Use regex pattern | `--regex` |
+| `--limit <n>` | Max results to show | `--limit 20` |
+
+---
+
+## Common Workflows
+
+### Daily Development Check
+```bash
+# Check repo health before starting work
+deployhelper doctor
+
+# See where your feature is deployed
+deployhelper where feature/MY-TICKET
+
+# Find your recent commits
+deployhelper search "MY-TICKET"
+```
+
+### Code Review Preparation
+```bash
+# Check who worked on this branch
+deployhelper owner feature/REVIEW-123
+
+# Search for specific implementation
+deployhelper search "error handling" --code --branch feature/REVIEW-123
+```
+
+### Deployment Tracking
+```bash
+# Check what's in UAT
+deployhelper where feature/AUTH-123
+deployhelper where feature/PAYMENT-456
+deployhelper where feature/REPORTING-789
+
+# Or search for deployment-related commits
+deployhelper search "deploy" --since 7d
+```
+
+### Cleanup Planning
+```bash
+# Run health check
+deployhelper doctor
+
+# Find old code
+deployhelper search "TODO" --code
+deployhelper search "FIXME" --code
+```
+
+---
+
+## Tips & Best Practices
+
+### For `where` command:
+- Configure environment branches in a `.deployhelper.json` file (future enhancement)
+- Currently searches for: dev, qa, uat, staging, prod, production
+- Works with squash merges and regular merges
+
+### For `search` command:
+- Use `--code` sparingly as it's slower (scans diffs)
+- Combine filters for better results: `--author "John" --since 7d`
+- Use `--limit` to avoid overwhelming output
+- Code search is limited to 100 commits per branch for performance
+
+### For `doctor` command:
+- Run regularly (weekly) to catch issues early
+- Pay attention to stale branches - they can indicate forgotten work
+- Large files warnings suggest using Git LFS
+
+### For `owner` command:
+- Useful before contacting someone about a branch
+- Shows commit distribution for pair programming insights
+- Branch age helps identify stale work
+
+---
+
+## Performance Notes
+
+- **`where`**: Fast, uses git merge-base for efficiency
+- **`owner`**: Fast, simple commit analysis
+- **`doctor`**: Medium, scans entire repo
+- **`search`**: Fast for commit messages, slower with `--code` flag
+
+---
+
+## Troubleshooting
+
+### "Branch not found"
+- Ensure you've fetched latest: `git fetch --all`
+- Try with `origin/` prefix: `deployhelper where origin/feature/ABC`
+
+### "Could not fetch from origin"
+- Check network connection
+- Verify git credentials are set up
+- Commands will work with local refs only
+
+### Search returns too many results
+- Use `--limit` to reduce output
+- Add `--author` or `--since` filters
+- Be more specific with query terms
+
+### Doctor shows many warnings
+- This is normal for active repos
+- Focus on issues (✗) before warnings (⚠)
+- Run cleanup commands as suggested
+
+---
+
+## Future Enhancements
+
+Based on these commands, potential improvements:
+- Configuration file for custom environment names
+- Interactive mode for search results
+- Export search results to file
+- Branch comparison between environments
+- Notification when features reach certain environments
